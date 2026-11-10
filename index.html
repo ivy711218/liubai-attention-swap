@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>留白 · 注意力置换可点击原型 V3</title>
+<style>
+:root{
+  --bg:#f2f5ef; --surface:#ffffff; --surface2:#f8faf6;
+  --line:#e3e9e0; --line2:#d2ddd0;
+  --ink:#1c2b25; --ink2:#586a60; --ink3:#93a197;
+  --accent:#2f6b55; --accent2:#e7f1e9; --accent-deep:#1c4b39;
+  --warm:#b96b3c; --warm2:#fbf0e6;
+  --feed:#202824; --feed2:#333c36; --feedink:#e7ede6;
+  --r:12px; --r2:18px; --r3:24px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 30px;border-bottom:1px solid var(--line);background:var(--surface)}
+.brand{display:flex;align-items:center;gap:13px}
+.logo{width:32px;height:32px;border-radius:11px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+.brand h1{font-size:17px;font-weight:500;margin:0;letter-spacing:.01em}
+.brand .sub{font-size:11.5px;color:var(--ink3);margin-top:1px}
+.topbtns{display:flex;gap:8px}
+.tbtn{border:1px solid var(--line2);background:var(--surface);color:var(--ink2);border-radius:9px;padding:8px 13px;font-size:12px;transition:transform .18s,border-color .18s,background .18s}
+.tbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface2)}
+.tbtn:active{transform:scale(.98)}
+.stage{max-width:1360px;margin:0 auto;padding:26px 26px 40px;display:grid;grid-template-columns:258px minmax(0,1fr) 272px;gap:24px;align-items:start}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+.pcard h3{font-size:13px;font-weight:500;margin:0 0 4px;display:flex;align-items:center;gap:7px}
+.pcard h3:before{content:"";width:3px;height:13px;border-radius:3px;background:var(--accent);display:block}
+.pcard .sub{font-size:11.5px;color:var(--ink3);margin:0 0 14px;line-height:1.7}
+.pcard ol{margin:0;padding-left:17px;color:var(--ink2);font-size:12px;line-height:1.85}
+.pcard ol li{margin-bottom:7px}
+.pcard ol b{color:var(--ink);font-weight:500}
+.pcard p{font-size:11.5px;color:var(--ink2);margin:0 0 8px;line-height:1.8}
+.pcard p b{color:var(--accent-deep);font-weight:500}
+.pcard p:last-child{margin-bottom:0}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink2)}
+.kv:last-of-type{border-bottom:0}
+.kv b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.hero-stat{background:var(--accent2);border-radius:12px;padding:14px;margin-bottom:12px}
+.hero-stat .lab{font-size:11px;color:var(--accent-deep);opacity:.78}
+.hero-stat .num{font-size:30px;font-weight:500;color:var(--accent-deep);line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.note{font-size:11px;color:var(--ink3);line-height:1.75;margin:12px 0 0}
+.answer{background:var(--warm2);border:1px solid #f0ddc9;border-radius:12px;padding:12px 13px;font-size:11.5px;line-height:1.8;color:#82512f;margin-top:12px}
+.answer b{font-weight:500}
+.device-wrap{display:flex;justify-content:center;padding-top:2px}
+.device{width:396px;height:820px;background:var(--surface);border:1px solid var(--line2);border-radius:46px;padding:11px;box-shadow:0 16px 48px rgba(28,43,37,.10),0 2px 8px rgba(28,43,37,.05)}
+.screen{width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;position:relative}
+.statusbar{height:36px;flex:0 0 36px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums;z-index:3;position:relative}
+.statusbar .dots{display:flex;gap:4px;align-items:center}
+.statusbar .dots i{display:block;width:4px;height:4px;border-radius:50%;background:var(--ink3)}
+.viewport{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin}
+.viewport::-webkit-scrollbar{width:4px}
+.viewport::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.homebar{height:22px;flex:0 0 22px;display:flex;align-items:center;justify-content:center;position:relative;z-index:3}
+.homebar i{display:block;width:112px;height:4px;border-radius:4px;background:var(--ink3);opacity:.4}
+
+.ph{position:relative;height:100%;display:flex;flex-direction:column;padding:10px 20px 20px;overflow:hidden}
+.wall{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.wall i{position:absolute;display:block;border-radius:50%}
+.wall .w1{width:360px;height:360px;left:-150px;top:-120px;background:#e4eee2}
+.wall .w2{width:300px;height:300px;right:-140px;top:120px;background:#f1ebdd}
+.wall .w3{width:260px;height:260px;left:-90px;bottom:-130px;background:#e6eee9}
+.ph>*:not(.wall){position:relative;z-index:1}
+.ph .date{font-size:11.5px;color:var(--ink2);text-align:center;margin-top:12px;letter-spacing:.04em}
+.ph .clock{font-size:56px;font-weight:300;text-align:center;letter-spacing:-.045em;line-height:1.2;color:#26372e;font-variant-numeric:tabular-nums;margin-top:2px}
+.widget{margin:14px 4px 18px;background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.9);border-radius:18px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(28,43,37,.05)}
+.widget .t{font-size:11px;color:var(--ink3)}
+.widget .n{font-size:26px;font-weight:500;line-height:1.25;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.widget .n small{font-size:12px;font-weight:400;color:var(--ink2);margin-left:3px}
+.widget .w{font-size:10.5px;color:var(--ink3);margin-top:2px}
+.hint{align-self:center;background:rgba(255,255,255,.8);border:1px solid var(--line);color:var(--accent-deep);font-size:11px;padding:6px 12px;border-radius:20px;margin:0 0 16px}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;color:#3d4c43;font-size:10.5px;transition:transform .18s}
+.app:active{transform:scale(.93)}
+.app .ico{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 8px rgba(28,43,37,.13);position:relative}
+.app .ico:after{content:"";position:absolute;inset:0;border-radius:16px;border:1px solid rgba(255,255,255,.22)}
+.dock{margin-top:auto;background:rgba(255,255,255,.74);border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:12px 8px;display:flex;justify-content:space-around}
+
+.tag{display:inline-block;font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--accent2);color:var(--accent-deep)}
+.btn{width:100%;border-radius:11px;padding:11px 12px;font-size:13px;border:1px solid transparent;transition:transform .18s,background .18s,border-color .18s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-deep)}
+.btn.primary:disabled{background:var(--line2);color:var(--ink3);cursor:not-allowed;transform:none}
+.btn.line{background:var(--surface);border-color:var(--line2);color:var(--ink2)}
+.btn.line:hover{border-color:var(--accent);color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink3)}
+.btn.ghost:hover{color:var(--ink2)}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:12px;padding:4px 0}
+
+.buffer{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(24,36,30,.42);backdrop-filter:blur(3px)}
+.buffer-card{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px 18px 18px;box-shadow:0 18px 44px rgba(20,34,27,.22);animation:rise .28s cubic-bezier(.16,1,.3,1) both}
+@keyframes rise{from{transform:translateY(18px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.buffer-card h2{font-size:17px;font-weight:500;margin:12px 0 7px;line-height:1.5;letter-spacing:.01em}
+.buffer-card .q{font-size:12.5px;color:var(--ink2);margin:0 0 14px;line-height:1.75}
+.bc-quota{background:var(--warm2);border-radius:9px;padding:8px 10px;font-size:11.5px;color:#8a5730;line-height:1.6;margin-top:10px}
+.alts{display:flex;gap:8px;margin-bottom:12px}
+.alt{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:9px 8px;font-size:11px;color:var(--ink2);display:flex;align-items:center;gap:6px;text-align:left;transition:transform .18s,border-color .18s}
+.alt:hover{border-color:var(--accent)}
+.alt:active{transform:scale(.98)}
+.alt svg{flex:0 0 auto;color:var(--accent)}
+.bc-note{font-size:11px;color:var(--ink3);line-height:1.7;margin:10px 0 0;text-align:center}
+.buffer-foot{border-top:1px solid var(--line);margin-top:12px;padding-top:11px;font-size:11px;color:var(--ink3);display:flex;justify-content:space-between}
+.screen-head{display:flex;align-items:center;gap:10px;padding:15px 18px 10px}
+.iconbtn{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);display:flex;align-items:center;justify-content:center}
+.iconbtn:active{transform:scale(.96)}
+.screen-head h2{font-size:14px;font-weight:500;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:16px;margin:0 18px 13px}
+.bigq{font-size:16px;font-weight:500;line-height:1.65;margin:5px 0 10px}
+textarea{width:100%;min-height:92px;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;font-family:inherit;font-size:13px;line-height:1.7;color:var(--ink);background:var(--surface);resize:vertical;outline:none}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--ink3)}
+.formline{font-size:11px;color:var(--ink3);margin:6px 0 12px}
+
+.done{text-align:center;padding:34px 22px 24px}
+.done .ring{width:66px;height:66px;border-radius:50%;background:var(--accent2);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.done h2{font-size:20px;font-weight:500;margin:0 0 6px}
+.done p{font-size:12.5px;color:var(--ink2);margin:0 0 20px;line-height:1.75}
+.saved{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:left;font-size:12.5px;color:var(--ink2);line-height:1.7;margin-bottom:16px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 0}
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 8px;text-align:center}
+.cat .n{font-size:18px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.cat .l{font-size:10.5px;color:var(--ink3)}
+
+.feed{background:var(--feed);color:var(--feedink);min-height:100%;padding:18px;display:flex;flex-direction:column}
+.feed .fhead{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#aebbb0}
+.feed .fbtn{background:transparent;border:1px solid #5f6d62;color:#e7ede6;border-radius:20px;padding:6px 11px;font-size:11px}
+.quota{display:flex;align-items:center;gap:14px;margin:18px 0 6px}
+.quota .qnum{font-size:34px;font-weight:300;line-height:1.2;font-variant-numeric:tabular-nums}
+.quota .qmeta{font-size:11.5px;color:#aebbb0;line-height:1.7}
+.quota .qmeta b{color:#e7ede6;font-weight:500}
+.fprogress{height:6px;border-radius:6px;background:#3a443d;overflow:hidden;margin:2px 0 18px}
+.fprogress i{display:block;height:100%;background:#7fae90;border-radius:5px;transition:width .3s}
+.fprogress i.low{background:#d0925f}
+.fcard{background:var(--feed2);border-radius:12px;padding:16px;margin-bottom:10px;color:#b2bfb4;font-size:12px;line-height:1.75}
+.fcard b{display:block;color:#e7ede6;font-weight:500;font-size:12.5px;margin-bottom:4px}
+.feed .fstop{margin-top:auto;padding-top:12px}
+.feed .fstop .btn{border-color:#5f6d62;background:transparent;color:#e7ede6}
+.feed .fstop .btn:hover{border-color:#a8c3ae}
+
+.statbig{font-size:42px;font-weight:500;line-height:1.15;color:var(--accent-deep);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.statbig small{font-size:14px;font-weight:400;margin-left:4px;color:var(--ink2)}
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.legend{flex:1;min-width:0}
+.legend .li{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink2);padding:3px 0}
+.legend .li i{width:8px;height:8px;border-radius:3px;display:block;flex:0 0 auto}
+.legend .li b{margin-left:auto;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.sec-title{display:flex;justify-content:space-between;align-items:center;margin:18px 18px 10px}
+.sec-title h3{font-size:13px;font-weight:500;margin:0}
+.thought{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 18px 10px}
+.thought .top{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink3);margin-bottom:6px}
+.thought .txt{font-size:12.5px;line-height:1.75;color:var(--ink)}
+.empty{background:var(--surface);border:1px dashed var(--line2);border-radius:12px;padding:22px 16px;margin:0 18px 14px;text-align:center;color:var(--ink3);font-size:12px;line-height:1.8}
+.tabs{position:sticky;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);display:flex;padding:8px 0 10px;margin-top:auto}
+.tab{flex:1;border:0;background:none;color:var(--ink3);font-size:10.5px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab.on{color:var(--accent)}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.setrow .t{font-size:12.5px}
+.setrow .d{font-size:10.5px;color:var(--ink3)}
+.switch{width:38px;height:22px;border-radius:20px;border:0;background:var(--line2);position:relative;transition:background .18s;flex:0 0 auto}
+.switch.on{background:var(--accent)}
+.switch i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .18s}
+.switch.on i{transform:translateX(16px)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 4px}
+.chip{border:1px solid var(--line2);background:var(--surface);border-radius:20px;padding:6px 12px;font-size:11.5px;color:var(--ink2)}
+.chip.on{background:var(--accent2);border-color:var(--accent);color:var(--accent-deep)}
+.groupline{padding:11px 0;border-bottom:1px solid var(--line)}
+.groupline:last-child{border-bottom:0}
+.groupline .gtop{display:flex;align-items:center;gap:8px}
+.groupline .gname{font-size:12px;font-weight:500;flex:1;color:var(--ink)}
+.groupline .gdesc{font-size:11px;color:var(--ink2);line-height:1.7;margin-top:5px}
+.groupline .plist{color:var(--ink3);font-size:10.5px;margin-top:3px}
+.groupline .gbadge{font-size:10px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--accent-deep);white-space:nowrap}
+.tech{background:var(--warm2);border-radius:10px;padding:12px;font-size:11px;color:#82512f;line-height:1.8;margin-top:8px}
+.toast{position:absolute;left:50%;bottom:54px;transform:translate(-50%,10px);background:var(--ink);color:#fff;font-size:11.5px;padding:9px 14px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:1120px){.stage{grid-template-columns:1fr;justify-items:center}.panel{width:100%;max-width:520px}.device-wrap{order:-1}}
+/* V3 · 强制闸门 */
+.app.locked .ico{filter:grayscale(.9);opacity:.5}
+.app.locked .ico .lockbadge{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:#4a5b51;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;z-index:2;filter:none;opacity:1}
+.lockbar{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #ecd9c2;border-radius:14px;padding:10px 12px;margin:0 4px 14px;text-align:left;width:calc(100% - 8px);color:#8a5730;font-size:11.5px;line-height:1.55;box-shadow:0 3px 10px rgba(28,43,37,.06)}
+.lockbar svg{flex:0 0 auto;color:#b96b3c}
+.lockbar b{font-weight:500;color:#1c2b25}
+.lockbar:active{transform:scale(.99)}
+.gate{min-height:100%;background:#1f2f27;color:#e9f0e9;padding:20px 18px 16px;display:flex;flex-direction:column;position:relative}
+.gate:before{content:"";position:absolute;width:240px;height:240px;border-radius:50%;background:#2a3d32;right:-120px;top:-90px;pointer-events:none}
+.gate>*{position:relative;z-index:1}
+.gseal{width:44px;height:44px;border-radius:14px;background:#31473a;color:#bcd7c3;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.gtag{font-size:10.5px;letter-spacing:.08em;color:#92b39d}
+.gate h1{font-size:21px;font-weight:500;margin:4px 0 6px;line-height:1.4}
+.gsub{font-size:12.5px;color:#b7c9bc;line-height:1.75;margin:0 0 12px}
+.grule{background:#2a3d32;border:1px solid #3b5143;border-radius:14px;padding:12px;margin-bottom:12px}
+.grule .rh{font-size:10.5px;color:#8fae9b;margin-bottom:8px;letter-spacing:.04em}
+.grule .rr{display:flex;gap:9px;align-items:flex-start;font-size:11.5px;line-height:1.65;color:#dbe7de;padding:3px 0}
+.grule .rr i{width:17px;height:17px;border-radius:50%;background:#41624f;color:#e9f0e9;font-style:normal;font-size:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin-top:2px}
+.grule .rr.warn{color:#e8c8a8;border-top:1px dashed #4a5e51;margin-top:5px;padding-top:8px}
+.grule .rr.warn i{background:#8a5a3a}
+.gquote{text-align:center;color:#8fae9b;font-size:12px;line-height:1.8;padding:6px 0 2px}
+.gquote span{font-size:10.5px;color:#6f8a7a}
+.gactions{margin-top:auto}
+.gate .btn{padding:9px 12px}
+.gate .btn.primary{background:#e9f0e9;color:#1b3327;font-weight:500}
+.gate .btn.primary:hover{background:#fff}
+.galts{display:flex;gap:8px;margin:6px 0}
+.galt{flex:1;border:1px solid #4a6152;background:transparent;color:#cfe0d3;border-radius:10px;padding:9px 8px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:5px}
+.gate .btn.line{background:transparent;border-color:#4a6152;color:#cfe0d3}
+.gemg{border:0;background:none;color:#8fa79a;font-size:11px;text-decoration:underline;padding:8px 0 2px;width:100%}
+.gconfirm{background:#3a3227;border:1px solid #7a6142;border-radius:12px;padding:12px;font-size:11.5px;color:#eddbc3;line-height:1.7}
+.gconfirm .cbtns{display:flex;gap:8px;margin-top:10px}
+.gconfirm .cbtns button{flex:1;border-radius:9px;padding:8px;font-size:11.5px;border:1px solid #7a6142;background:transparent;color:#eddbc3}
+.gconfirm .cbtns button.yes{background:#b96b3c;border-color:#b96b3c;color:#fff}
+.ticket{background:#e7f1e9;border:1px solid #bcd7c3;border-radius:12px;padding:12px 14px;margin:0 0 18px;display:flex;align-items:center;gap:11px;text-align:left}
+.ticket svg{color:var(--accent);flex:0 0 auto}
+.ticket .tt{font-size:12.5px;color:var(--accent-deep);font-weight:500}
+.ticket .td{font-size:11px;color:var(--ink2);line-height:1.6;margin-top:2px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logoMark"></div>
+    <div><h1>留白 · 注意力置换原型</h1><div class="sub">V3 · 强制闸门 · 离线可点击 · 不真实拦截任何 App</div></div>
+  </div>
+  <div class="topbtns">
+    <button class="tbtn" data-global="home">回到手机桌面</button>
+    <button class="tbtn" data-global="reset">重置演示数据</button>
+  </div>
+</header>
+
+<main class="stage">
+  <aside class="panel">
+    <div class="pcard">
+      <h3>有强制性吗？有</h3>
+      <p class="sub">这是对「到点提醒后，能不能点一下继续刷」的修正。</p>
+      <p><b>额度一到，视频界面被系统收起，不是弹个窗等你点掉。</b>收起后的锁定页上没有任何「继续看」按钮；想再开一段，必须先完成一次 2–3 分钟的置换，换到一张额度券。</p>
+      <p>规则一句话：<b>一段视频 = 一次置换</b>。换 App 不算、提前按停也不算绕过，8 个平台整组都在闸门里。</p>
+      <div class="answer"><b>回答「看 5 分钟后能不能接着看」：</b>能，但要看下一段得先关掉、去做一件事，回来才解锁。第一次决定仍由你做，之后由闸门接管。每天留 1 次紧急放行，防止被关到卸载。</div>
+    </div>
+    <div class="pcard">
+      <h3>怎么演示</h3>
+      <ol>
+        <li>点桌面任意平台 → 第一次清醒窗口，选 <b>先看 5 分钟</b>。</li>
+        <li>额度走完，<b>不点任何按钮</b>，自动进入「已收起」锁定页——注意这里没有继续按钮。</li>
+        <li>试着回桌面点 <b>快手</b>：仍被挡回闸门。再点桌面上的 <b>先做一件事</b>，写一句话，才会拿到下一段额度券。</li>
+        <li>锁定页底部可试 <b>紧急放行</b>（需二次确认，每天 1 次）；设置页可在严格 / 柔和两档间切换对比。</li>
+      </ol>
+    </div>
+    <div class="pcard">
+      <h3>三条铁律（再修订）</h3>
+      <p><b>1 · 自己必须最省时</b>　单次交互 ≤10 秒，完成即退出。</p>
+      <p><b>2 · 不阻断当下这一段，但续段要付费</b>　把「再点一下」改成「再做一件事」，出口仍在，成本变了。</p>
+      <p><b>3 · 只记换回来的</b>　界面不展示「刷了多久」，只在控制台内部记录。</p>
+    </div>
+    <div class="pcard">
+      <h3>落地约束（强制能力边界）</h3>
+      <p><b>iOS 是真强制。</b> ManagedSettings 的 Application Shield 可对整组 App 生效：图标变暗、打开只见自定义屏蔽页；ShieldActionExtension 的按钮经 App Group 通知主 App 清除 shield，即可实现「做完置换才解锁」。</p>
+      <p><b>Android 只能近似。</b> UsageStatsManager + 悬浮窗无法真正阻止 App 启动，只能全屏遮罩模拟「收起」；硬阻断需无障碍或设备管理器，Google Play 政策受限，国内渠道可评估。</p>
+      <p>额度到点由 DeviceActivity（iOS）/ 前台服务（Android）触发，不依赖用户主动退出。国内 ROM 保活是主要不确定性。</p>
+    </div>
+  </aside>
+
+  <section class="device-wrap">
+    <div class="device">
+      <div class="screen">
+        <div class="statusbar"><span id="sbTime">9:41</span><span class="dots"><i></i><i></i><i></i><span style="margin-left:4px">100%</span></span></div>
+        <div class="viewport" id="viewport"></div>
+        <div class="homebar"><i></i></div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="pcard">
+      <h3>演示控制台</h3>
+      <p class="sub">数值由真实点击产生，App 界面只取其中「换回来的」部分。</p>
+      <div class="hero-stat">
+        <div class="lab">置换率 · 北极星指标</div>
+        <div class="num" id="cRate">0%</div>
+        <div class="lab" id="cRateSub">完成置换 0 次 / 清醒窗口 0 次</div>
+      </div>
+      <div class="kv"><span>当前页面</span><b id="cScreen">手机桌面</b></div>
+      <div class="kv"><span>闸门状态</span><b id="cGate">未锁定</b></div>
+      <div class="kv"><span>今日换回</span><b id="cMinutes">0 分钟</b></div>
+      <div class="kv"><span>思考卡片</span><b id="cCards">0 张</b></div>
+      <div class="kv"><span>清醒窗口曝光</span><b id="cBuffers">0 次</b></div>
+      <div class="kv"><span>本次已用段数</span><b id="cSegments">0 段</b></div>
+      <div class="kv"><span>剩余额度</span><b id="cQuota">—</b></div>
+      <div class="kv"><span>紧急放行</span><b id="cEmergency">剩 1 次</b></div>
+      <div class="kv"><span>内部 · 累计看视频</span><b id="cBrush">0 分钟</b></div>
+      <p class="note">「累计看视频」只在控制台出现，App 界面永不展示。展示损失会让人回避，展示收益才形成正反馈。</p>
+    </div>
+    <div class="pcard">
+      <h3>两档强度，可回退</h3>
+      <p class="sub">强制不是一刀切，设置页可随时切换。</p>
+      <p><b>严格（默认）</b>　到点强制收起、锁定页无继续按钮、完成置换才发额度券。</p>
+      <p><b>柔和</b>　到点只弹清醒窗口，可一键续段，用于让用户先适应节拍。</p>
+      <p><b>紧急放行</b>　每天 1 次、需二次确认；是一次例外，不解除闸门，防止被关到卸载。</p>
+    </div>
+    <div class="pcard">
+      <h3>平台按钩子分三组</h3>
+      <p class="sub">不同平台的「收不住」原因不同，回收节拍也不同。</p>
+      <p><b>无限下滑型</b>　抖音 / 快手 / 视频号 / 微视 · 每 5 分钟一段</p>
+      <p><b>连续剧集型</b>　红果短剧 · 按集间提醒，不打断剧情</p>
+      <p><b>兴趣社区型</b>　小红书 / 哔哩哔哩 / 西瓜视频 · 每 10 分钟一段</p>
+      <p class="note">闸门按「整组」生效：锁的是 8 个平台，不是某一个 App。</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="tbtn" data-global="ledger">直接看账本</button>
+      <button class="tbtn" data-global="reset">清空重来</button>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  var KEY='liubai-prototype-v3';
+  var viewport=document.getElementById('viewport');
+  var toastEl=document.getElementById('toast');
+  var timers=[],toastTimer=null;
+
+  var ICONS={
+    play:'<path d="M9 6.5 L18 12 L9 17.5 Z" fill="currentColor" stroke="none"/>',
+    note:'<path d="M9 17V6l9-2v11"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="15.5" cy="15.5" r="2.5"/>',
+    cam:'<rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/>',
+    chat:'<path d="M4 5.5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8l-4 3v-11a2 2 0 0 1 2-2z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/>',
+    book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H19"/>',
+    tv:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 3.5l3 3.5M16 3.5l-3 3.5M9.5 12.5h.01M14.5 12.5h.01"/>',
+    melon:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17"/>',
+    wave:'<path d="M4 12c2-4 3.5 4 5.5 0s3.5 4 5.5 0 3 3 5 0"/><path d="M4 17c2-3 3.5 3 5.5 0s3.5 3 5.5 0 3 2 5 0" opacity=".6"/>',
+    blank:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>',
+    phone:'<path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 6 6L15 13.5 19 15v3a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    back:'<path d="M14 5l-7 7 7 7"/>',
+    check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    move:'<circle cx="13" cy="4.5" r="1.8"/><path d="M9 21l2.5-5 2-2-1-5-3 2-2 4M14 9l3 2 2 5M14 14l3 7"/>',
+    contact:'<path d="M4 5.5h16v11H9l-5 3v-14z"/><path d="M8 9.5h8M8 12.5h5"/>',
+    clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.5l3.5 2"/>',
+    cards:'<rect x="4" y="6" width="13" height="14" rx="2"/><path d="M8 3.5h10a2 2 0 0 1 2 2V18"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>',
+    pause:'<path d="M9 5v14M15 5v14"/>',
+    lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
+    ticket:'<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M12 7v10" stroke-dasharray="2 2"/>',
+    shield:'<path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>'
+  };
+
+  function ico(n,s){s=s||20;return '<svg viewBox="0 0 24 24" width="'+s+'" height="'+s+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[n]||'')+'</svg>';}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function nl(s){return esc(s).replace(/\n/g,'<br>');}
+  function hhmm(){var d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+  function todayLabel(){var d=new Date(),w=['日','一','二','三','四','五','六'];return (d.getMonth()+1)+'月'+d.getDate()+'日 星期'+w[d.getDay()];}
+  function fmt(ts){var d=new Date(ts);return (d.getMonth()+1)+'月'+d.getDate()+'日 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+
+  var PLATFORMS={
+    douyin:{name:'抖音',icon:'note',bg:'#21252c',group:'slide'},
+    kuaishou:{name:'快手',icon:'cam',bg:'#f26a2d',group:'slide'},
+    hongguo:{name:'红果短剧',icon:'play',bg:'#d4432f',group:'series'},
+    shipinhao:{name:'视频号',icon:'chat',bg:'#2f9e63',group:'slide'},
+    xiaohongshu:{name:'小红书',icon:'book',bg:'#df474c',group:'community'},
+    bilibili:{name:'哔哩哔哩',icon:'tv',bg:'#48a4d0',group:'community'},
+    xigua:{name:'西瓜视频',icon:'melon',bg:'#e05a44',group:'community'},
+    weishi:{name:'微视',icon:'wave',bg:'#3f7bce',group:'slide'}
+  };
+  var GROUPS={
+    slide:{label:'无限下滑型',badge:'5 分钟 / 段',desc:'一条盖一条，不需要做任何决定',names:'抖音 · 快手 · 视频号 · 微视'},
+    series:{label:'连续剧集型',badge:'按集间提醒',desc:'钩子是「下一集」，集末才是天然断点，不打断剧情',names:'红果短剧'},
+    community:{label:'兴趣社区型',badge:'10 分钟 / 段',desc:'有明确想看的东西，收不住的程度较低',names:'小红书 · 哔哩哔哩 · 西瓜视频'}
+  };
+  var THINK=[
+    {tag:'决策',q:'今天最让你犹豫的一个决定是什么？写下它真正卡住的地方。'},
+    {tag:'复盘',q:'今天有哪 5 分钟是白花的？下次怎么避开？'},
+    {tag:'表达',q:'用一句话向外行解释你今天做的工作，不许用行业词。'},
+    {tag:'创意',q:'如果这件事只能花一半时间做，你会砍掉哪一步？'},
+    {tag:'观察',q:'今天你注意到一个别人没注意的细节是什么？'},
+    {tag:'逻辑',q:'你最近一次改变主意，是因为新证据，还是因为情绪？'},
+    {tag:'决策',q:'你正在拖的那件事，最小可交付的一步是什么？'},
+    {tag:'行业',q:'本周你看到一个和你预期相反的现象吗？它错在哪一环？'},
+    {tag:'复盘',q:'如果只能保留今天做的一件事，你留哪件？为什么？'},
+    {tag:'创意',q:'把你现在困扰的问题倒过来问一遍，会问出什么？'}
+  ];
+  var MOVES=['起身走 2 分钟，不戴耳机','做 20 个深蹲','肩颈拉伸 2 分钟','到窗边站 2 分钟，看远处'];
+  var CONTACTS=[{who:'老陈',line:'突然想起你，最近怎么样？'},{who:'家里',line:'今天吃了什么，我这会儿有空聊聊。'},{who:'一位久没联系的朋友',line:'这周找个时间见一面？'}];
+
+  function blank(){return {events:[],brushes:[],emgDate:'',stats:{buffers:0,swaps:0,continues:0,emergency:0,gates:0,unlocks:0},settings:{quota:5,focus:'决策',mode:'strict',groups:{slide:true,series:true,community:true}}};}
+  function load(){
+    try{
+      var d=JSON.parse(localStorage.getItem(KEY));
+      if(d&&d.events&&d.stats&&d.settings&&d.settings.groups){
+        if(!d.settings.mode)d.settings.mode='strict';
+        if(!d.emgDate)d.emgDate='';
+        if(d.stats.emergency===undefined)d.stats.emergency=0;
+        return d;
+      }
+    }catch(e){}
+    return blank();
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S.data));}catch(e){}}
+  var S={screen:'home',data:load(),app:'douyin',task:null,draft:'',result:null,quotaFrom:false,
+          quota:{total:5,left:5,app:'douyin'},sessionSegments:0,
+          locked:false,lockApp:'douyin',ticket:null,emgConfirm:false,endReason:'timeout'};
+  function emgDay(){return new Date().toDateString();}
+  function emgLeft(){
+    if(S.data.emgDate!==emgDay()){S.data.emgDate=emgDay();S.data.stats.emergency=0;save();}
+    return Math.max(0,1-(S.data.stats.emergency||0));
+  }
+  function markEmergency(){
+    if(S.data.emgDate!==emgDay()){S.data.emgDate=emgDay();S.data.stats.emergency=0;}
+    S.data.stats.emergency=(S.data.stats.emergency||0)+1;save();
+  }
+
+  function pname(key){return (PLATFORMS[key]||PLATFORMS.douyin).name;}
+  function groupOf(key){return (PLATFORMS[key]||PLATFORMS.douyin).group;}
+  function quotaOf(key){
+    var g=groupOf(key);
+    if(g==='series')return 8;
+    if(g==='community')return S.data.settings.quota+5;
+    return S.data.settings.quota;
+  }
+  function isToday(ts){return new Date(ts).toDateString()===new Date().toDateString();}
+  function todayEvents(){return S.data.events.filter(function(e){return isToday(e.ts);});}
+  function todayMinutes(){return todayEvents().reduce(function(a,e){return a+e.minutes;},0);}
+  function cards(){return S.data.events.filter(function(e){return e.type==='think'&&e.text;});}
+  function catMinutes(t){return todayEvents().filter(function(e){return e.type===t;}).reduce(function(a,e){return a+e.minutes;},0);}
+  function brushMinutes(){return S.data.brushes.reduce(function(a,e){return a+e.minutes;},0);}
+  function rate(){var b=S.data.stats.buffers;return b?Math.round(S.data.stats.swaps/b*100):0;}
+  function pickThink(){var f=S.data.settings.focus,pool=THINK.filter(function(t){return t.tag===f;});if(!pool.length)pool=THINK;return pool[S.data.stats.buffers%pool.length];}
+  function pickMove(){return MOVES[S.data.stats.buffers%MOVES.length];}
+  function pickContact(){return CONTACTS[S.data.stats.buffers%CONTACTS.length];}
+  function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1800);}
+  function clearTimers(){timers.forEach(clearInterval);timers=[];}
+
+  var SCREEN_NAMES={home:'手机桌面',buffer:'清醒窗口',gate:'强制收起页',think:'动脑微任务',move:'动身微任务',contact:'联系微任务',done:'完成反馈',feed:'视频额度中',ledger:'留白账本',cards:'思考卡片',review:'每周回顾',settings:'设置'};
+
+  function donut(){
+    var vals=[{v:catMinutes('think'),c:'#2f6b55'},{v:catMinutes('move'),c:'#8fae7d'},{v:catMinutes('contact'),c:'#d0a26b'}];
+    var total=vals.reduce(function(a,x){return a+x.v;},0);
+    var R=38,C=2*Math.PI*R,acc=0,segs='';
+    if(total>0){vals.forEach(function(x){if(!x.v)return;var len=C*x.v/total;segs+='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+x.c+'" stroke-width="9" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-acc)+'" transform="rotate(-90 50 50)"/>';acc+=len;});}
+    return '<svg width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="今日换回时间构成"><circle cx="50" cy="50" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="9"/>'+segs+
+      '<text x="50" y="49" text-anchor="middle" font-size="21" font-weight="500" fill="#1c4b39" font-family="inherit">'+todayMinutes()+'</text>'+
+      '<text x="50" y="64" text-anchor="middle" font-size="9" fill="#93a197" font-family="inherit">分钟</text></svg>';
+  }
+  function legend(){
+    function li(c,l,v){return '<div class="li"><i style="background:'+c+'"></i><span>'+l+'</span><b>'+v+' 分</b></div>';}
+    return '<div class="legend">'+li('#2f6b55','思考',catMinutes('think'))+li('#8fae7d','动身',catMinutes('move'))+li('#d0a26b','联系',catMinutes('contact'))+'</div>';
+  }
+  function appTile(key,act){
+    var p=PLATFORMS[key];
+    return '<button class="app'+(S.locked?' locked':'')+'" data-act="'+act+'" data-key="'+key+'"><span class="ico" style="background:'+p.bg+'">'+ico(p.icon,26)+
+      (S.locked?'<span class="lockbadge">'+ico('lock',11)+'</span>':'')+'</span><span>'+p.name+'</span></button>';
+  }
+  function head(title,backAct){return '<div class="screen-head"><button class="iconbtn" data-act="'+(backAct||'home')+'" aria-label="返回">'+ico('back',16)+'</button><h2>'+title+'</h2></div>';}
+  function tabs(active){function t(a,l,i){return '<button class="tab'+(active===a?' on':'')+'" data-act="'+a+'">'+ico(i,18)+'<span>'+l+'</span></button>';}return '<div class="tabs">'+t('ledger','账本','book')+t('cards','卡片','cards')+t('settings','设置','gear')+'</div>';}
+
+  function viewHome(){
+    var keys=['douyin','kuaishou','hongguo','shipinhao','xiaohongshu','bilibili','xigua','weishi'];
+    var apps=keys.map(function(k){return appTile(k,'open-app');}).join('');
+    return '<div class="ph"><div class="wall"><i class="w1"></i><i class="w2"></i><i class="w3"></i></div>'+
+      '<div class="date">'+todayLabel()+'</div><div class="clock">'+hhmm()+'</div>'+
+      '<div class="widget"><div><div class="t">今日留白</div><div class="n">'+todayMinutes()+'<small>分钟</small></div><div class="w">'+cards().length+' 张思考卡片 · 只记换回来的</div></div>'+
+        '<div style="width:52px;height:52px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;color:var(--accent)">'+ico('blank',26)+'</div></div>'+
+      '<div class="hint">'+(S.locked?'闸门未解除 · 8 个短视频 App 已收起':'点任意短视频 App，看看会发生什么')+'</div>'+
+      (S.locked?'<button class="lockbar" data-act="task-think">'+ico('lock',18)+'<span><b>先做一件事，换下一段</b><br>写一句话 / 动一动 / 联系一个人，完成即解锁</span></button>':'')+
+      (S.ticket&&!S.locked?'<button class="lockbar" data-act="use-ticket">'+ico('ticket',18)+'<span><b>你还有 1 张额度券</b><br>点这里兑现下一段，也可以攒着不看</span></button>':'')+
+      '<div class="apps">'+apps+'</div>'+
+      '<div class="dock">'+
+        '<button class="app" data-act="noop"><span class="ico" style="background:#6f8a97">'+ico('phone',24)+'</span><span>电话</span></button>'+
+        '<button class="app" data-act="noop"><span class="ico" style="background:#9aa89c">'+ico('gear',24)+'</span><span>系统</span></button>'+
+        '<button class="app" data-act="open-ledger"><span class="ico" style="background:#2f6b55">'+ico('blank',24)+'</span><span>留白</span></button>'+
+      '</div></div>';
+  }
+
+  function viewBuffer(){
+    var t=S.task||pickThink(),c=pickContact(),q=quotaOf(S.app),series=groupOf(S.app)==='series';
+    var strict=S.data.settings.mode==='strict';
+    var btn=series?(strict?'先看这一集，集末强制收起':'看完这一集，到点叫我'):
+                   (strict?'先看 '+q+' 分钟，到点强制收起':'再看 '+q+' 分钟，到点叫我');
+    return '<div style="position:relative;height:100%;background:#dfe7dc">'+
+      '<div style="padding:44px 22px;color:#6b7d70;font-size:12px;line-height:1.9">'+esc(pname(S.app))+' · 已暂停<br><span style="font-size:11px">'+
+        (strict?'第一次决定权在你手里，这一段结束后由闸门接管':'留白挡住了第一秒，决定权还在你手里')+'</span></div>'+
+      '<div class="buffer"><div class="buffer-card">'+
+        '<div class="between" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="tag">清醒一下 · <span id="sec3">3</span> 秒</span><span style="font-size:10.5px;color:var(--ink3)">第 '+(S.data.stats.buffers+1)+' 次拿主意</span></div>'+
+        (S.quotaFrom?'<div class="bc-quota">这一段结束了 · 本次已用 '+S.sessionSegments+' 段。要不要换件事做？</div>':'')+
+        '<h2>花 3 分钟，把刚才没想完的那件事想完</h2>'+
+        '<p class="q">'+esc(t.q)+'</p>'+
+        '<div class="alts">'+
+          '<button class="alt" data-act="task-move">'+ico('move',15)+'<span>起身走 2 分钟</span></button>'+
+          '<button class="alt" data-act="task-contact">'+ico('contact',15)+'<span>给'+esc(c.who)+'发条消息</span></button>'+
+        '</div>'+
+        '<button class="btn primary" data-act="task-think">写一句话，存成思考卡片</button>'+
+        '<button class="btn line" data-act="continue" style="margin-top:8px">'+ico('clock',14)+' '+esc(btn)+'</button>'+
+        '<p class="bc-note">'+(strict?'第一次由你决定；这一段会被强制收起，<br>下一段要凭一次置换兑换。':'每段到点自动回来重新拿主意，<br>不靠意志力。')+'</p>'+
+        '<div class="buffer-foot"><span>今日换回 '+todayMinutes()+' 分钟</span><span>'+cards().length+' 张思考卡片</span></div>'+
+      '</div></div></div>';
+  }
+
+  function viewGate(){
+    var name=pname(S.lockApp),q=quotaOf(S.lockApp),manual=S.endReason==='manual',left=emgLeft();
+    var seg=(S.sessionSegments||1);
+    return '<div class="gate">'+
+      '<div class="gseal">'+ico('lock',26)+'</div>'+
+      '<div class="gtag">系统级收回 · 本次第 '+seg+' 段</div>'+
+      '<h1>'+esc(name)+' 已收起</h1>'+
+      '<p class="gsub">'+(manual?'你提前按停了这一段，不用等到点。':'这 '+q+' 分钟到点了，没有「再刷一条」。')+
+        '视频界面已经被关掉，想再看下一段，先去做一件事。</p>'+
+      '<div class="grule"><div class="rh">下一段怎么来</div>'+
+        '<div class="rr"><i>1</i><span>完成一次 2–3 分钟的置换：写一句话、动一动、或联系一个人</span></div>'+
+        '<div class="rr"><i>2</i><span>系统发一张「下一段额度券」，随时可兑现，也可以攒着不看</span></div>'+
+        '<div class="rr warn"><i>!</i><span>换到快手、小红书也不算兑换，8 个平台整组都在闸门里</span></div></div>'+
+      '<div class="gquote">一段视频 · 一次置换<br><span>不是戒断，是让每一段都变成你选的</span></div>'+
+      '<div class="gactions">'+
+        '<button class="btn primary" data-act="task-think">写一句话，换下一段</button>'+
+        '<div class="galts">'+
+          '<button class="galt" data-act="task-move">'+ico('move',14)+' 动一动</button>'+
+          '<button class="galt" data-act="task-contact">'+ico('contact',14)+' 联系一个人</button></div>'+
+        '<button class="btn line" data-act="home">今天就到这，回桌面</button>'+
+        (S.emgConfirm?
+          '<div class="gconfirm">确定不做置换就再看一段？这会算作今天的例外，闸门本身不解除。'+
+            '<div class="cbtns"><button data-act="emergency-no">取消</button><button class="yes" data-act="emergency-yes">确定放行</button></div></div>':
+          '<button class="gemg" data-act="emergency">'+(left>0?'紧急放行（今天剩 '+left+' 次）':'今天的紧急放行已用完')+'</button>')+
+      '</div></div>';
+  }
+
+  function viewThink(){
+    var t=S.task||pickThink(),dis=S.draft.trim()?'':'disabled';
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+head('动脑 · 3 分钟','buffer')+
+      '<div class="card" style="margin-top:6px"><div class="tiny muted" style="font-size:11px;color:var(--ink3)">'+esc(t.tag)+' · 写一句话就够，不用写得漂亮</div>'+
+      '<div class="bigq">'+esc(t.q)+'</div>'+
+      '<textarea id="draftInput" placeholder="把脑子里的那句话写下来…">'+esc(S.draft)+'</textarea>'+
+      '<div class="formline" id="formline">'+(S.draft.trim()?'随时可以存下来':'写点什么，按钮就会亮')+'</div>'+
+      '<button class="btn primary" id="saveThought" data-act="save-thought" '+dis+'>存成思考卡片</button>'+
+      '<button class="btn ghost" data-act="home" style="margin-top:6px">先不写了</button></div>'+
+      '<p style="font-size:11px;color:var(--ink3);margin:4px 18px 18px;line-height:1.8">留白不给你打分，也不把内容发出去。卡片只属于你，攒起来每周回看一次。</p></div>';
+  }
+  function viewMove(){
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+head('动身 · 2 分钟','buffer')+
+      '<div class="card" style="margin-top:6px"><div style="font-size:11px;color:var(--ink3)">无需器械，不用换衣服</div>'+
+      '<div class="bigq">'+esc(pickMove())+'</div>'+
+      '<p style="font-size:11.5px;color:var(--ink3);line-height:1.8;margin:0 0 18px">刷视频的启动成本几乎为零，替代动作也必须零准备。2 分钟之后，你随时可以回去。</p>'+
+      '<button class="btn primary" data-act="complete" data-kind="move">完成了，记 2 分钟</button>'+
+      '<button class="btn ghost" data-act="home" style="margin-top:6px">先不做</button></div></div>';
+  }
+  function viewContact(){
+    var c=pickContact();
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+head('联系 · 2 分钟','buffer')+
+      '<div class="card" style="margin-top:6px"><div style="font-size:11px;color:var(--ink3)">系统给你一个具体的人，和一句现成的开场白</div>'+
+      '<div class="bigq">给'+esc(c.who)+'发条消息</div>'+
+      '<div style="background:var(--surface2);border-radius:10px;padding:12px;font-size:13px;line-height:1.7;margin-bottom:18px">「'+esc(c.line)+'」</div>'+
+      '<p style="font-size:11.5px;color:var(--ink3);line-height:1.8;margin:0 0 18px">社交多半卡在「不知道说什么」。原型不会真的发消息。</p>'+
+      '<button class="btn primary" data-act="complete" data-kind="contact">已发出，记 2 分钟</button>'+
+      '<button class="btn ghost" data-act="home" style="margin-top:6px">先不发</button></div></div>';
+  }
+  function viewDone(){
+    var r=S.result||{};
+    return '<div class="done"><div class="ring">'+ico('check',30)+'</div>'+
+      '<h2>换回 '+r.minutes+' 分钟</h2><p>不是从手机里省下来的，是你自己拿回来的。</p>'+
+      (r.unlocked?'<div class="ticket">'+ico('ticket',22)+'<div><div class="tt">下一段 '+r.quota+' 分钟已解锁</div>'+
+        '<div class="td">'+esc(r.appName)+' 的闸门已解除。现在去看，或者攒着以后再说。</div></div></div>':'')+
+      (r.text?'<div class="saved"><span style="font-size:11px;color:var(--ink3)">第 '+cards().length+' 张思考卡片</span><br>'+nl(r.text)+'</div>':'')+
+      '<div class="cats" style="margin:0 0 20px">'+
+        '<div class="cat"><div class="n">'+todayMinutes()+'</div><div class="l">今日换回 / 分</div></div>'+
+        '<div class="cat"><div class="n">'+cards().length+'</div><div class="l">思考卡片 / 张</div></div>'+
+        '<div class="cat"><div class="n">'+rate()+'%</div><div class="l">置换率</div></div></div>'+
+      (r.unlocked?
+        '<button class="btn primary" data-act="use-ticket">现在兑现，看 '+r.quota+' 分钟</button>'+
+        '<button class="btn line" data-act="ledger" style="margin-top:8px">先攒着，看看账本</button>':
+        '<button class="btn primary" data-act="ledger">看看攒下的东西</button>')+
+      '<button class="btn ghost" data-act="home" style="margin-top:6px">回到手机</button>'+
+      '<p style="font-size:11px;color:var(--ink3);margin-top:18px;line-height:1.8">留白自己只该停留 10 秒。<br>一个帮你少用手机的软件，不能变成新的停留理由。</p></div>';
+  }
+
+  function viewFeed(){
+    var q=S.quota,name=pname(S.quota.app),series=groupOf(S.quota.app)==='series';
+    var strict=S.data.settings.mode==='strict';
+    var cards=series?
+      '<div class="fcard"><b>第 3 集 · 正在进行</b>剧情正到关键处。留白不会在剧集中间打断你，集末才是天然的清醒窗口。</div>'+
+      '<div class="fcard"><b>下一集已预载</b>「再看一集」是这类平台最有效的钩子，所以它按集回收，不按分钟。</div>':
+      (groupOf(S.quota.app)==='community'?
+      '<div class="fcard"><b>你关注的人更新了</b>这里至少有一个明确的想看的东西，所以额度给得比无限下滑型宽一些。</div>'+
+      '<div class="fcard"><b>相关推荐</b>算法会用下一条把这一条盖过去，你不需要做任何决定。</div>':
+      '<div class="fcard"><b>这里本该是第一条内容</b>算法会用下一条把这一条盖过去，你不需要做任何决定。</div>'+
+      '<div class="fcard"><b>这里本该是第二条内容</b>不用选、不用想、不用抬头，只需要继续往下滑。</div>'+
+      '<div class="fcard"><b>这里本该是第三条内容</b>时间不是被抢走的，是被一格一格滑走的。</div>');
+    return '<div class="feed">'+
+      '<div class="fhead"><span>'+esc(name)+' · 这一段'+(strict?' · 闸门已挂':'')+'</span><button class="fbtn" data-act="stop-feed">'+ico('pause',12)+' 随时停一下</button></div>'+
+      '<div class="quota"><div class="qnum"><span id="quotaNum">'+q.left+'</span><small style="font-size:14px;font-weight:400;margin-left:3px">分钟</small></div>'+
+        '<div class="qmeta"><b>剩余额度</b><br>'+(series?'这一集结束自动回来':'到点自动回来')+' · 演示中 1 秒 ≈ 1 分钟</div></div>'+
+      '<div class="fprogress"><i id="quotaBar" style="width:'+(q.total?q.left/q.total*100:0)+'%"></i></div>'+
+      cards+
+      '<div class="fcard" style="background:transparent;border:1px dashed #4a564c"><b style="color:#cdd8ce">到点会发生什么</b>'+
+        (strict?'系统会强制收起这个 App，锁定页没有「继续看」；想再开一段，必须完成一次置换。':'系统会再弹一次清醒窗口，你重新拿一次主意。')+'</div>'+
+      '<div class="fstop"><button class="btn" data-act="stop-feed">一键收手，现在就停</button>'+
+        '<p style="font-size:10.5px;color:#9fae9f;text-align:center;margin:8px 0 0;line-height:1.7">提前收手不用等到点，但下一段同样要凭置换兑换。</p></div></div>';
+  }
+
+  function viewLedger(){
+    var cs=cards().slice(-3).reverse();
+    var list=cs.length?cs.map(function(e){return '<div class="thought"><div class="top"><span>'+esc(e.tag||'思考')+'</span><span>'+fmt(e.ts)+'</span></div><div class="txt">'+nl(e.text)+'</div></div>';}).join(''):
+      '<div class="empty">还没有思考卡片。<br>下一次清醒窗口里写一句话，这里就有了第一张。</div>';
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+
+      '<div class="screen-head"><h2>留白</h2><span style="margin-left:auto;font-size:11px;color:var(--ink3)">只记换回来的</span></div>'+
+      '<div class="card" style="margin-top:4px"><div style="font-size:11px;color:var(--ink3)">今天换回来的时间</div>'+
+        '<div style="font-size:11px;color:var(--accent-deep);margin:4px 0 2px">已用 '+S.sessionSegments+' 段视频 · 完成 '+S.data.stats.swaps+' 次置换</div>'+
+        '<div class="donut-wrap" style="margin-top:10px">'+donut()+legend()+'</div></div>'+
+      '<div class="sec-title"><h3>最近攒下的想法</h3><button class="linkbtn" data-act="cards">全部 '+cards().length+' 张 →</button></div>'+list+
+      '<div style="padding:0 18px 16px"><button class="btn line" data-act="review">生成每周一页回顾</button></div>'+tabs('ledger')+'</div>';
+  }
+  function viewCards(){
+    var cs=cards().slice().reverse();
+    var list=cs.length?cs.map(function(e){return '<div class="thought"><div class="top"><span>'+esc(e.tag||'思考')+'</span><span>'+fmt(e.ts)+'</span></div><div class="txt">'+nl(e.text)+'</div></div>';}).join(''):
+      '<div class="empty">一张卡片都还没有。<br>去手机桌面点一下「抖音」，写下一句话。</div>';
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+
+      '<div class="screen-head"><h2>思考卡片</h2><span style="margin-left:auto;font-size:11px;color:var(--ink3)">共 '+cs.length+' 张</span></div>'+
+      '<p style="font-size:11px;color:var(--ink3);margin:0 18px 14px;line-height:1.8">动脑坚持不下来，一是启动成本高，二是没有可见的积累。微任务解决前者，这里解决后者。</p>'+list+tabs('cards')+'</div>';
+  }
+  function viewReview(){
+    var week=Date.now()-7*86400000,ev=S.data.events.filter(function(e){return e.ts>=week;});
+    var mins=ev.reduce(function(a,e){return a+e.minutes;},0),cs=ev.filter(function(e){return e.type==='think'&&e.text;});
+    var counts={};cs.forEach(function(e){var k=e.tag||'思考';counts[k]=(counts[k]||0)+1;});
+    var top=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];})[0];
+    var msg=cs.length?('这 7 天你写下了 '+cs.length+' 个想法，最常想的是「'+top+'」。'):'这 7 天还没有想法留下来。从一句话开始就行。';
+    var days={};ev.forEach(function(e){var k=new Date(e.ts).toDateString();days[k]=(days[k]||0)+e.minutes;});
+    var bars=Object.keys(days).sort().map(function(k){var d=new Date(k),v=days[k];
+      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="width:48px;font-size:10.5px;color:var(--ink3)">'+(d.getMonth()+1)+'/'+d.getDate()+'</span><span style="flex:1;background:var(--line);border-radius:6px;height:10px;display:block;overflow:hidden"><span style="display:block;height:100%;width:'+Math.min(100,v*8)+'%;background:var(--accent);border-radius:6px"></span></span><span style="width:42px;text-align:right;font-size:10.5px;color:var(--ink3)">'+v+' 分</span></div>';}).join('');
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+head('每周一页回顾','ledger')+
+      '<div class="card" style="margin-top:6px"><div style="font-size:11px;color:var(--ink3)">近 7 天</div>'+
+      '<div class="statbig">'+mins+'<small>分钟</small></div>'+
+      '<p style="font-size:12.5px;color:var(--ink2);line-height:1.8;margin:12px 0 16px">'+esc(msg)+'</p>'+(bars||'<p style="font-size:11px;color:var(--ink3)">还没有可画的数据。</p>')+'</div>'+
+      '<div class="card"><div style="font-size:11px;color:var(--ink3);margin-bottom:8px">这一页只做一件事</div><p style="font-size:12.5px;line-height:1.8;margin:0;color:var(--ink2)">让你看见「动脑」是可以攒起来的。攒得起来，才留得住。</p></div>'+
+      '<div style="padding:0 18px 18px"><button class="btn line" data-act="cards">翻一翻全部卡片</button></div></div>';
+  }
+  function viewSettings(){
+    var st=S.data.settings,strict=st.mode==='strict';
+    var quotas=[3,5,10].map(function(v){return '<button class="chip'+(st.quota===v?' on':'')+'" data-act="set-quota" data-v="'+v+'">'+v+' 分钟</button>';}).join('');
+    var fs=['决策','复盘','表达','创意','逻辑','观察'].map(function(v){return '<button class="chip'+(st.focus===v?' on':'')+'" data-act="set-focus" data-v="'+v+'">'+v+'</button>';}).join('');
+    var modes=[{v:'strict',l:'严格 · 到点强制收起'},{v:'soft',l:'柔和 · 只弹窗提醒'}].map(function(m){
+      return '<button class="chip'+(st.mode===m.v?' on':'')+'" data-act="set-mode" data-v="'+m.v+'">'+m.l+'</button>';}).join('');
+    var groups=Object.keys(GROUPS).map(function(k){var g=GROUPS[k];
+      return '<div class="groupline"><div class="gtop"><span class="gname">'+g.label+'</span><span class="gbadge">'+g.badge+'</span>'+
+        '<button class="switch'+(st.groups[k]?' on':'')+'" data-act="toggle-group" data-key="'+k+'" aria-label="切换 '+g.label+'"><i></i></button></div>'+
+        '<div class="gdesc">'+g.desc+'</div><div class="plist">'+g.names+'</div></div>';}).join('');
+    return '<div style="display:flex;flex-direction:column;min-height:100%">'+
+      '<div class="screen-head"><h2>设置</h2></div>'+
+      '<div class="card" style="margin-top:4px"><div style="font-size:11px;color:var(--ink3);margin-bottom:2px">闸门强度</div><div class="chips">'+modes+'</div>'+
+        '<p style="font-size:10.5px;color:var(--ink3);line-height:1.75;margin:6px 0 0">'+
+        (strict?'默认档：到点强制收起视频，锁定页没有继续按钮；完成一次置换才发下一段额度券，每天留 1 次紧急放行。':'柔和档：到点只弹清醒窗口、可一键续段。用于先让用户适应节拍，再逐步收紧；切换时立即解除当前闸门。')+'</p></div>'+
+      '<div class="card" style="margin-top:4px"><div style="font-size:11px;color:var(--ink3);margin-bottom:6px">平台分组与回收节拍</div>'+groups+
+        '<p style="font-size:10.5px;color:var(--ink3);line-height:1.75;margin:10px 0 0">桌面上的 8 个真实平台按「钩子类型」分组，不同组用不同节拍回收。闸门按整组生效，短剧不在剧集中间打断。</p></div>'+
+      '<div class="card"><div style="font-size:11px;color:var(--ink3)">每段额度（无限下滑型）</div><div class="chips">'+quotas+'</div>'+
+        '<p style="font-size:10.5px;color:var(--ink3);line-height:1.75;margin:6px 0 0">兴趣社区型在此基础上 +5 分钟；连续剧集型按集间提醒，不受此值影响。</p></div>'+
+      '<div class="card"><div style="font-size:11px;color:var(--ink3)">想变强的方向</div><div class="chips">'+fs+'</div>'+
+        '<p style="font-size:10.5px;color:var(--ink3);line-height:1.75;margin:6px 0 0">决定清醒窗口推送哪一类动脑问题。任务全部本地预置，离线可用。</p></div>'+
+      '<div class="card"><div style="font-size:11px;color:var(--ink3);margin-bottom:6px">原型说明 · 强制能力边界</div>'+
+        '<div class="tech">这是交互原型，不会读取或拦截真实 App。<br><b>iOS 是真强制</b>：FamilyControls + ManagedSettings 的 Application Shield 可对整组 App 生效，图标变暗、打开只见自定义屏蔽页；ShieldActionExtension 的按钮经 App Group 通知主 App 清除 shield，即「做完置换才解锁」。<br><b>Android 只能近似</b>：UsageStatsManager + 悬浮窗无法真正阻止 App 启动，只能全屏遮罩模拟收起；硬阻断需无障碍 / 设备管理器，Google Play 政策受限。<br>额度到点由 DeviceActivity / 前台服务触发，不依赖用户主动退出。使用数据本地存储，不上云。</div></div>'+tabs('settings')+'</div>';
+  }
+
+  var VIEWS={home:viewHome,buffer:viewBuffer,gate:viewGate,think:viewThink,move:viewMove,contact:viewContact,done:viewDone,feed:viewFeed,ledger:viewLedger,cards:viewCards,review:viewReview,settings:viewSettings};
+
+  function updateConsole(){
+    document.getElementById('cRate').textContent=rate()+'%';
+    document.getElementById('cRateSub').textContent='完成置换 '+S.data.stats.swaps+' 次 / 清醒窗口 '+S.data.stats.buffers+' 次';
+    document.getElementById('cScreen').textContent=SCREEN_NAMES[S.screen]||S.screen;
+    document.getElementById('cGate').textContent=S.locked?'已收起 · 待置换':(S.ticket?'有 1 张额度券':'未锁定');
+    document.getElementById('cMinutes').textContent=todayMinutes()+' 分钟';
+    document.getElementById('cCards').textContent=cards().length+' 张';
+    document.getElementById('cBuffers').textContent=S.data.stats.buffers+' 次';
+    document.getElementById('cSegments').textContent=S.sessionSegments+' 段';
+    document.getElementById('cQuota').textContent=S.screen==='feed'?(S.quota.left+' 分钟'):'—';
+    document.getElementById('cEmergency').textContent='剩 '+emgLeft()+' 次';
+    document.getElementById('cBrush').textContent=brushMinutes()+' 分钟';
+  }
+  function render(){
+    clearTimers();
+    if(S.screen==='gate'){toastEl.classList.remove('show');clearTimeout(toastTimer);}
+    viewport.innerHTML=(VIEWS[S.screen]||viewHome)();
+    viewport.scrollTop=0;
+    updateConsole();
+    if(S.screen==='buffer'){
+      var n=3,el=document.getElementById('sec3');
+      var h=setInterval(function(){n--;if(el)el.textContent=n>0?n:'0';if(n<=0){clearInterval(h);if(el&&el.parentNode)el.parentNode.textContent='已停顿 3 秒';}},1000);
+      timers.push(h);
+    }
+    if(S.screen==='feed'){
+      var f=setInterval(function(){
+        S.quota.left--;
+        var num=document.getElementById('quotaNum'),bar=document.getElementById('quotaBar');
+        if(num)num.textContent=Math.max(0,S.quota.left);
+        if(bar){bar.style.width=Math.max(0,S.quota.left/S.quota.total*100)+'%';if(S.quota.left<=S.quota.total*0.3)bar.classList.add('low');}
+        document.getElementById('cQuota').textContent=Math.max(0,S.quota.left)+' 分钟';
+        if(S.quota.left<=0){clearInterval(f);endSegment('timeout');}
+      },1000);
+      timers.push(f);
+    }
+  }
+  function go(s){toastEl.classList.remove('show');clearTimeout(toastTimer);S.screen=s;render();}
+  function endSegment(reason){
+    S.endReason=reason;S.sessionSegments++;
+    var mins=reason==='timeout'?S.quota.total:Math.max(0,S.quota.total-S.quota.left);
+    if(mins>0){S.data.brushes.push({ts:Date.now(),minutes:mins,app:S.quota.app});}
+    save();
+    if(S.data.settings.mode==='strict'){
+      S.locked=true;S.lockApp=S.quota.app;S.emgConfirm=false;
+      S.data.stats.gates=(S.data.stats.gates||0)+1;save();
+      toast(reason==='timeout'?'到点了，系统已收起这一段':'这一段已按停');
+      go('gate');
+    }else{
+      S.locked=false;
+      toast('这一段到点了，自动回到清醒窗口');
+      openBuffer(S.quota.app,true,true);
+    }
+  }
+  function openBuffer(appKey,countIt,fromQuota){
+    if(S.locked){S.emgConfirm=false;go('gate');return;}
+    S.app=appKey||S.app;S.task=pickThink();S.draft='';
+    S.quotaFrom=!!fromQuota;
+    if(countIt!==false){S.data.stats.buffers++;save();}
+    go('buffer');
+  }
+  function complete(kind,text,tag){
+    var minutes=kind==='think'?3:2;
+    var unlocked=false,quota=0,appName='';
+    if(S.locked){
+      unlocked=true;appName=pname(S.lockApp);quota=quotaOf(S.lockApp);
+      S.locked=false;S.ticket={app:S.lockApp,quota:quota};S.emgConfirm=false;
+      S.data.stats.unlocks=(S.data.stats.unlocks||0)+1;
+    }
+    S.data.events.push({ts:Date.now(),type:kind,minutes:minutes,text:text||'',tag:tag||''});
+    S.data.stats.swaps++;
+    S.result={minutes:minutes,text:text||'',unlocked:unlocked,appName:appName,quota:quota};
+    save();go('done');
+  }
+  function startFeed(appKey,quota,countContinue){
+    S.quota={total:quota,left:quota,app:appKey};S.app=appKey;
+    if(countContinue){S.data.stats.continues++;save();}
+    go('feed');
+  }
+  function reset(){
+    S.data=blank();S.task=null;S.draft='';S.result=null;S.quotaFrom=false;
+    S.quota={total:5,left:5,app:'douyin'};S.sessionSegments=0;S.app='douyin';
+    S.locked=false;S.lockApp='douyin';S.ticket=null;S.emgConfirm=false;S.endReason='timeout';
+    save();go('home');toast('演示数据已清空');
+  }
+
+  viewport.addEventListener('click',function(e){
+    var el=e.target.closest('[data-act]');if(!el)return;
+    var act=el.dataset.act,key=el.dataset.key;
+    switch(act){
+      case 'open-app':
+        if(!S.data.settings.groups[groupOf(key)]){toast('这一组在设置里已关闭');return;}
+        if(S.locked){toast('换 App 不算兑换，先做一件事');S.emgConfirm=false;go('gate');return;}
+        if(S.ticket){var tq=S.ticket.quota;S.ticket=null;startFeed(key,tq,true);toast('已兑现你换来的这一段');return;}
+        openBuffer(key,true,false);break;
+      case 'open-ledger':go('ledger');break;
+      case 'noop':toast('这个演示只模拟视频类 App');break;
+      case 'home':go('home');break;
+      case 'gate':S.emgConfirm=false;go('gate');break;
+      case 'buffer':
+        if(S.locked){S.emgConfirm=false;go('gate');return;}
+        openBuffer(S.app,false,false);break;
+      case 'task-think':go('think');break;
+      case 'task-move':go('move');break;
+      case 'task-contact':go('contact');break;
+      case 'save-thought':
+        var txt=S.draft.trim();if(!txt){toast('先写一句话再存');return;}
+        complete('think',txt,(S.task||pickThink()).tag);S.draft='';break;
+      case 'complete':complete(el.dataset.kind);break;
+      case 'continue':
+        if(S.locked){S.emgConfirm=false;go('gate');return;}
+        startFeed(S.app,quotaOf(S.app),true);break;
+      case 'use-ticket':
+        if(!S.ticket){toast('还没有额度券');return;}
+        var uq=S.ticket.quota,uk=S.ticket.app;S.ticket=null;startFeed(uk,uq,true);break;
+      case 'stop-feed':endSegment('manual');break;
+      case 'emergency':
+        if(emgLeft()<=0){toast('今天的紧急放行已用完');return;}
+        S.emgConfirm=true;render();break;
+      case 'emergency-yes':
+        if(emgLeft()<=0||!S.locked){S.emgConfirm=false;render();return;}
+        markEmergency();S.emgConfirm=false;S.ticket=null;
+        toast('本段为例外放行，闸门仍然生效');
+        startFeed(S.lockApp,quotaOf(S.lockApp),true);break;
+      case 'emergency-no':S.emgConfirm=false;render();break;
+      case 'ledger':go('ledger');break;
+      case 'cards':go('cards');break;
+      case 'review':go('review');break;
+      case 'settings':go('settings');break;
+      case 'toggle-group':S.data.settings.groups[key]=!S.data.settings.groups[key];save();render();break;
+      case 'set-quota':S.data.settings.quota=Number(el.dataset.v);save();render();break;
+      case 'set-focus':S.data.settings.focus=el.dataset.v;save();render();break;
+      case 'set-mode':
+        S.data.settings.mode=el.dataset.v;
+        if(el.dataset.v==='soft'){S.locked=false;S.ticket=null;S.emgConfirm=false;}
+        save();render();break;
+    }
+  });
+  viewport.addEventListener('input',function(e){
+    if(e.target.id!=='draftInput')return;
+    S.draft=e.target.value;
+    var b=document.getElementById('saveThought'),f=document.getElementById('formline');
+    if(b)b.disabled=!S.draft.trim();
+    if(f)f.textContent=S.draft.trim()?'随时可以存下来':'写点什么，按钮就会亮';
+  });
+  document.querySelectorAll('[data-global]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var a=b.dataset.global;
+      if(a==='reset')reset();else if(a==='home')go('home');else if(a==='ledger')go('ledger');
+    });
+  });
+  document.getElementById('logoMark').innerHTML=ico('blank',19);
+  document.getElementById('sbTime').textContent=hhmm();
+  render();
+})();
+</script>
+</body>
+</html>
