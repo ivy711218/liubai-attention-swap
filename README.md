@@ -8,7 +8,9 @@
 
 ## 在线体验
 
-**在线体验：[https://ivy711218.github.io/liubai-attention-swap/](https://ivy711218.github.io/liubai-attention-swap/)**（GitHub Pages，点击即可打开原型；首次生效可能需要 1–2 分钟）。
+[打开在线原型 →](https://ivy711218.github.io/liubai-attention-swap/)
+
+> GitHub Pages 静态托管，点击即可打开；首次生效可能需要 1–2 分钟。
 
 ## 为什么不做「限时 / 锁 App」
 
